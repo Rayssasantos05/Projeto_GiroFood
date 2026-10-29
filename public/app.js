@@ -107,7 +107,7 @@ function toast(message, error = false) {
 }
 
 function appLogo() {
-  return `<div class="brand"><span class="brand-mark">♧</span><span>GiroFood</span></div>`;
+  return `<div class="brand"><img class="brand-logo" src="/logo.png" alt="GiroFood"></div>`;
 }
 
 function renderLogin() {
