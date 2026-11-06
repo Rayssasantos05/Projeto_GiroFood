@@ -275,3 +275,227 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .heading-actions { width: 100%; flex-direction: row; }
   .heading-actions > button { flex: 1; }
 }
+
+:root {
+  color: #38241c;
+  background: #fff8f0;
+  --orange: #f45b24;
+  --orange-dark: #c83e13;
+  --orange-pale: #fff0e4;
+  --ink: #38241c;
+  --muted: #8c756a;
+  --line: #f0dfd2;
+  --shadow: 0 16px 40px rgb(116 57 29 / 9%);
+}
+
+body { background: #fff8f0; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline-color: rgb(244 91 36 / 40%);
+}
+
+.login-page { background: #fffaf5; }
+.login-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 82% 18%, rgb(255 184 92 / 50%), transparent 32%),
+    linear-gradient(150deg, rgb(232 79 25 / 88%), rgb(169 51 18 / 95%)),
+    url("https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1400") center/cover;
+}
+.login-hero::before, .login-hero::after {
+  position: absolute;
+  z-index: -1;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+.login-hero::before { top: 16%; right: -120px; width: 390px; height: 390px; }
+.login-hero::after { top: 24%; right: -55px; width: 260px; height: 260px; }
+.login-hero .brand { position: relative; z-index: 1; }
+.login-hero .brand-logo { padding: 8px 11px; border-radius: 12px; background: white; }
+.hero-copy h1 { max-width: 440px; font-size: clamp(32px, 3.8vw, 51px); }
+.quote { border-radius: 4px 14px 14px 4px; border-left: 4px solid #ffc06d; background: rgb(77 28 12 / 20%); }
+.login-main {
+  background:
+    radial-gradient(ellipse at 90% 8%, rgb(255 225 200 / 45%), transparent 32%),
+    #fffaf5;
+}
+.login-card { border: 1px solid #f4e3d6; border-radius: 22px; box-shadow: 0 20px 55px rgb(116 57 29 / 10%); }
+.login-card h2 { font-size: 26px; letter-spacing: -.8px; }
+.login-card > p { font-size: 13px; }
+.field label { color: #62473b; }
+.field input, .field select, .field textarea, .search-input, .select-control {
+  border-color: #efdfd3;
+  border-radius: 10px;
+  background: #fffdfa;
+}
+.field input:focus, .field select:focus, .field textarea:focus, .search-input:focus, .select-control:focus {
+  border-color: #f28a5e;
+  background: white;
+}
+.primary-button {
+  background: linear-gradient(135deg, #ff7536, #e84d1b);
+  box-shadow: 0 5px 13px rgb(219 72 26 / 23%);
+}
+.primary-button:hover {
+  background: linear-gradient(135deg, #f3652a, #c83e13);
+  box-shadow: 0 7px 17px rgb(219 72 26 / 29%);
+}
+.secondary-button { border-color: #efdfd3; }
+.secondary-button:hover { border-color: #f1b18f; background: #fff5ec; }
+.demo-note { background: #fff4e8; color: #855b45; }
+
+.app-shell {
+  background:
+    radial-gradient(ellipse at 92% 0%, rgb(255 226 198 / 40%), transparent 28%),
+    #fff8f0;
+}
+.sidebar {
+  border-right: 0;
+  background: linear-gradient(165deg, #e9531e 0%, #c93c14 72%, #a93012 100%);
+  box-shadow: 8px 0 28px rgb(128 51 21 / 10%);
+  color: white;
+}
+.sidebar .brand {
+  min-height: 75px;
+  margin-bottom: 22px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 8px 20px rgb(112 41 16 / 13%);
+}
+.sidebar .brand-logo { max-height: 51px; }
+.nav-list { gap: 8px; }
+.nav-item {
+  min-height: 45px;
+  border: 1px solid transparent;
+  color: rgb(255 247 239 / 90%);
+  font-size: 12px;
+}
+.nav-item:hover { background: rgb(255 255 255 / 12%); color: white; }
+.nav-item.active {
+  border-color: rgb(255 255 255 / 50%);
+  background: #fff7ef;
+  color: #bd3b14;
+  box-shadow: 0 6px 16px rgb(115 36 13 / 16%);
+}
+.nav-item.active .nav-icon { color: #ed5924; }
+.sidebar-promo {
+  border: 1px solid rgb(255 231 204 / 50%);
+  background: rgb(110 32 12 / 22%);
+}
+.sidebar-promo b { color: #ffcf91; }
+.sidebar-promo p { color: rgb(255 244 230 / 83%); }
+.main-area { padding-top: 21px; }
+.topbar {
+  min-height: 48px;
+  margin: -4px 0 22px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #f1e2d6;
+}
+.top-icon { border-color: #f0d7c6; color: #b44820; }
+.profile-button { padding: 5px 10px 5px 5px; border-radius: 30px; background: rgb(255 255 255 / 82%); }
+.profile-button:hover { background: white; box-shadow: 0 4px 14px rgb(116 57 29 / 9%); }
+.profile-button img { box-shadow: 0 0 0 2px #f6c6a9; }
+.profile-meta b { color: #462d21; }
+.page-heading {
+  position: relative;
+  margin-bottom: 24px;
+  padding: 5px 0 18px 17px;
+  border-bottom: 1px solid #f0dfd2;
+}
+.page-heading::before {
+  position: absolute;
+  top: 8px;
+  bottom: 19px;
+  left: 0;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(#ff9a4f, #df4818);
+  content: "";
+}
+.page-heading > div:first-child::before {
+  display: block;
+  margin-bottom: 5px;
+  color: #ce5122;
+  content: "GIROFOOD  /  SEU NEGÓCIO EM MOVIMENTO";
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.15px;
+}
+.page-heading h1 { color: #38241c; font-size: 27px; letter-spacing: -1px; }
+.page-heading p { color: #8c756a; font-size: 12px; }
+.search-wrap::before { color: #ce6540; }
+.stat-pill { border-color: #f0dfd2; color: #806b60; }
+.stat-pill.orange {
+  border-color: #ffd2b6;
+  background: linear-gradient(135deg, #fff5e9, #ffead9);
+  color: #b93e16;
+}
+.stat-pill.green { border-color: #dceddf; }
+.table-wrap, .product-card, .kanban-column, .settings-card {
+  border-color: #efdfd3;
+  box-shadow: 0 7px 22px rgb(116 57 29 / 5%);
+}
+.customer-table th { background: #fff4e9; color: #815d4a; }
+.customer-table td { border-color: #f5ebe3; }
+.customer-table tbody tr:hover { background: #fffaf5; }
+.avatar { background: #ffe6d4; color: #b83e17; }
+.count-badge { background: #ffeadb; color: #b43e17; }
+.product-card { border-radius: 16px; }
+.product-photo { background: #f6e5d7; }
+.category-tag { background: #a63b18; }
+.product-info h3 { color: #40291e; font-size: 13px; }
+.product-price { color: #cc4519; }
+.kanban { gap: 15px; }
+.kanban-column { border-radius: 15px; }
+.column-title { padding: 13px 10px; background: linear-gradient(100deg, #f15c25, #dd4819); color: white; }
+.kanban-column:nth-child(2) .column-title { background: #fff0d6; color: #99621d; }
+.kanban-column:nth-child(3) .column-title { background: #eaf5e9; color: #398050; }
+.column-body { background: rgb(255 248 240 / 72%); }
+.order-card {
+  border-color: #f1e1d5;
+  border-radius: 12px;
+  box-shadow: 0 5px 14px rgb(116 57 29 / 6%);
+}
+.order-card:hover { border-color: #f1b18f; box-shadow: 0 8px 18px rgb(116 57 29 / 10%); }
+.order-total { color: #c84418; }
+.hint { border-color: #ffd7b9; background: #fff2e4; color: #92502b; }
+.chip.active { border-color: #f3b18d; background: #ffeadb; color: #b83e17; }
+.settings-heading { border-color: #f1e2d6; }
+.logo-editor { border-color: #f0ccb5; background: #fff9f3; }
+.logo-preview { border-color: #f0dfd2; }
+.modal-backdrop { background: rgb(63 35 23 / 55%); backdrop-filter: blur(3px); }
+.modal { border: 1px solid #f0dfd2; border-radius: 19px; box-shadow: 0 24px 80px rgb(69 36 20 / 23%); }
+.modal-header h2 { color: #40291e; }
+.modal-close { background: #fff0e4; color: #a8401b; }
+.modal-close:hover { background: #ffe2cc; }
+.mobile-nav { border-top-color: #f0dfd2; background: #fffaf5; box-shadow: 0 -7px 24px rgb(116 57 29 / 8%); }
+.mobile-nav button { background: transparent; }
+.mobile-nav button.active { position: relative; color: #c83e13; }
+.mobile-nav button.active::before {
+  position: absolute;
+  top: 0;
+  right: 25%;
+  left: 25%;
+  height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: #f45b24;
+  content: "";
+}
+
+@media (max-width: 650px) {
+  .main-area { padding-top: 0; }
+  .mobile-header {
+    border-bottom-color: #f0dfd2;
+    background: rgb(255 250 245 / 97%);
+    box-shadow: 0 4px 15px rgb(116 57 29 / 4%);
+  }
+  .mobile-header .brand-logo { max-height: 42px; }
+  .page-heading { padding-top: 2px; }
+  .page-heading h1 { font-size: 22px; }
+  .page-heading > div:first-child::before { font-size: 7px; }
+  .product-card { border-radius: 12px; }
+  .kanban-column { border-radius: 12px; }
+  .modal { border-color: #f0dfd2; }
+}
