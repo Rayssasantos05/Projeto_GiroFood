@@ -506,7 +506,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   overflow: hidden;
   border: 1px solid rgb(185 71 30 / 18%);
   border-radius: 21px;
-  background: #d84a1c;
+  background: #ee8663;
   box-shadow: 0 15px 34px rgb(143 57 25 / 18%);
 }
 .banner-track {
