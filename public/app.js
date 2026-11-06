@@ -16,6 +16,35 @@ const GALLERY = [
   "https://images.pexels.com/photos/616833/pexels-photo-616833.jpeg?auto=compress&cs=tinysrgb&w=700",
   "https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&w=700",
 ];
+const SYSTEM_BANNERS = [
+  {
+    eyebrow: "SEU NEGÓCIO, DO SEU JEITO",
+    title: "Mais sabor. Mais controle. Mais Giro.",
+    description: "Seu restaurante em movimento, com pedidos e cardápio organizados em um só lugar.",
+    action: "Explorar cardápio",
+    view: "menu",
+    image: "https://images.pexels.com/photos/315755/pexels-photo-315755.jpeg?auto=compress&cs=tinysrgb&w=1400",
+    accent: "banner-citrus",
+  },
+  {
+    eyebrow: "PEDIDO BOM É PEDIDO BEM CUIDADO",
+    title: "Do primeiro clique até a entrega.",
+    description: "Acompanhe cada etapa e mantenha tudo fluindo na sua cozinha.",
+    action: "Ver pedidos",
+    view: "orders",
+    image: "https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1400",
+    accent: "banner-tomato",
+  },
+  {
+    eyebrow: "QUEM VOLTA, FAZ PARTE DA CASA",
+    title: "Cuide de cada cliente como único.",
+    description: "Tenha os contatos e o histórico de pedidos sempre à mão.",
+    action: "Ver clientes",
+    view: "customers",
+    image: "https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg?auto=compress&cs=tinysrgb&w=1400",
+    accent: "banner-pepper",
+  },
+];
 const initialState = {
   customers: [
     { id: "c1", name: "Carlos Eduardo Silva", phone: "(11) 98765-4321", email: "carlos.silva@gmail.com", address: "Av. Paulista, 1000 - Bela Vista", photo: CUSTOMER_PHOTOS[0] },
@@ -50,6 +79,8 @@ let productQuery = "";
 let orderQuery = "";
 let categoryFilter = "Todas as categorias";
 let orderFilter = "Todos";
+let activeBanner = 0;
+let bannerTimer;
 
 function loadState() {
   try {
@@ -271,6 +302,29 @@ function renderOrderCard(order) {
   </article>`;
 }
 
+function renderBannerCarousel() {
+  return `<section class="banner-carousel" aria-label="Destaques do GiroFood">
+    <div class="banner-track">
+      ${SYSTEM_BANNERS.map((banner, index) => `<article class="system-banner ${banner.accent}${index === activeBanner ? " is-active" : ""}" data-banner-slide="${index}" aria-hidden="${index !== activeBanner}"${index !== activeBanner ? " inert" : ""} style="--banner-image:url('${banner.image}')">
+        <div class="banner-copy">
+          <span class="banner-eyebrow"><span></span>${banner.eyebrow}</span>
+          <h2>${banner.title}</h2>
+          <p>${banner.description}</p>
+          <button class="banner-cta" type="button" data-view="${banner.view}">${banner.action}<span aria-hidden="true">↗</span></button>
+        </div>
+        <div class="banner-art" aria-hidden="true"><span class="banner-sun"></span><span class="banner-orbit"></span><span class="banner-stamp">FEITO<br>COM<br>SABOR</span><span class="banner-index">0${index + 1}</span></div>
+      </article>`).join("")}
+    </div>
+    <div class="banner-controls">
+      <div class="banner-dots" role="group" aria-label="Escolher destaque">
+        ${SYSTEM_BANNERS.map((banner, index) => `<button class="banner-dot${index === activeBanner ? " is-active" : ""}" type="button" aria-label="Destaque ${index + 1}: ${banner.eyebrow.toLocaleLowerCase("pt-BR")}" aria-current="${index === activeBanner ? "true" : "false"}" data-banner-index="${index}"></button>`).join("")}
+      </div>
+      <div class="banner-counter"><span>0${activeBanner + 1}</span> / 0${SYSTEM_BANNERS.length}</div>
+      <div class="banner-arrows"><button type="button" aria-label="Destaque anterior" data-banner-direction="-1">←</button><button type="button" aria-label="Próximo destaque" data-banner-direction="1">→</button></div>
+    </div>
+  </section>`;
+}
+
 function renderHistoryOrder(order) {
   return `<article class="order-card">
     <div class="order-top"><span>Pedido #${escapeHtml(order.number)} · ${stageLabel[order.status]}</span><time>${new Date(order.createdAt).toLocaleString("pt-BR")}</time></div>
@@ -290,6 +344,7 @@ function renderOrders() {
   const historyOrders = historyStatus ? orders.filter((order) => order.status === historyStatus) : [];
   const counts = Object.fromEntries(orderStages.map(([status]) => [status, activeOrders.filter((order) => order.status === status).length]));
   return `${heading("Pedidos (Vendas)", "Gerencie todos os pedidos do seu negócio em tempo real", `<button class="primary-button" type="button" data-action="new-order">＋ Inserir pedido manual</button>`)}
+    ${renderBannerCarousel()}
     <div class="toolbar">
       <div class="search-wrap"><input class="search-input" id="order-search" type="search" placeholder="Buscar pedido, cliente, telefone..." value="${escapeHtml(orderQuery)}"></div>
       <div class="stats-row"><span class="stat-pill">Todos <b>${state.orders.length}</b></span><span class="stat-pill orange">Saíram <b>${state.orders.filter((o) => o.status === "shipped").length}</b></span><span class="stat-pill green">Entregues <b>${state.orders.filter((o) => o.status === "delivered").length}</b></span><span class="stat-pill">Cancelados <b>${state.orders.filter((o) => o.status === "cancelled").length}</b></span></div>
@@ -320,6 +375,10 @@ function renderSettings() {
 }
 
 function render() {
+  if (bannerTimer) {
+    clearInterval(bannerTimer);
+    bannerTimer = undefined;
+  }
   if (sessionStorage.getItem("girofood-auth") !== "true") {
     renderLogin();
     return;
@@ -347,6 +406,51 @@ function attachViewListeners() {
     activeView = button.dataset.view;
     render();
   }));
+  const bannerSlides = [...document.querySelectorAll("[data-banner-slide]")];
+  if (bannerSlides.length > 1) {
+    let currentIndex = activeBanner;
+    const showBanner = (index) => {
+      currentIndex = (index + bannerSlides.length) % bannerSlides.length;
+      activeBanner = currentIndex;
+      bannerSlides.forEach((slide, slideIndex) => {
+        const isActive = slideIndex === currentIndex;
+        slide.classList.toggle("is-active", isActive);
+        slide.setAttribute("aria-hidden", String(!isActive));
+        slide.inert = !isActive;
+      });
+      document.querySelectorAll("[data-banner-index]").forEach((dot, dotIndex) => {
+        const isActive = dotIndex === currentIndex;
+        dot.classList.toggle("is-active", isActive);
+        dot.setAttribute("aria-current", String(isActive));
+      });
+      const counter = document.querySelector(".banner-counter");
+      if (counter) counter.innerHTML = `<span>0${currentIndex + 1}</span> / 0${bannerSlides.length}`;
+    };
+    document.querySelectorAll("[data-banner-direction]").forEach((button) => button.addEventListener("click", () => {
+      showBanner(currentIndex + Number(button.dataset.bannerDirection));
+    }));
+    document.querySelectorAll("[data-banner-index]").forEach((button) => button.addEventListener("click", () => {
+      showBanner(Number(button.dataset.bannerIndex));
+    }));
+    const carousel = document.querySelector(".banner-carousel");
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!prefersReducedMotion) {
+      const stopBannerTimer = () => {
+        clearInterval(bannerTimer);
+        bannerTimer = undefined;
+      };
+      const startBannerTimer = () => {
+        if (!bannerTimer) bannerTimer = setInterval(() => showBanner(currentIndex + 1), 6500);
+      };
+      carousel.addEventListener("mouseenter", stopBannerTimer);
+      carousel.addEventListener("mouseleave", startBannerTimer);
+      carousel.addEventListener("focusin", stopBannerTimer);
+      carousel.addEventListener("focusout", (event) => {
+        if (!carousel.contains(event.relatedTarget)) startBannerTimer();
+      });
+      startBannerTimer();
+    }
+  }
   const search = document.querySelector("#customer-search, #product-search, #order-search");
   if (search) search.addEventListener("input", () => {
     if (search.id === "customer-search") customerQuery = search.value;
