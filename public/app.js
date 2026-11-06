@@ -1,4 +1,6 @@
 const STORAGE_KEY = "girofood-demo-v1";
+const DEMO_ACCOUNT = { email: "contademo@gmail.com", password: "Demo05@" };
+const MAX_LOGO_SIZE = 1024 * 1024;
 const CUSTOMER_PHOTOS = [
   "https://i.pravatar.cc/80?img=47",
   "https://i.pravatar.cc/80?img=12",
@@ -36,11 +38,12 @@ const initialState = {
     { id: "demo-order-004", number: "004", customerId: "c4", status: "ready", items: [{ productId: "p5", quantity: 1 }, { productId: "p4", quantity: 1 }], notes: "", createdAt: Date.now() - 600_000 },
     { id: "demo-order-005", number: "005", customerId: "c5", status: "shipped", items: [{ productId: "p1", quantity: 1 }], notes: "Entregar na portaria.", createdAt: Date.now() - 300_000 },
   ],
-  restaurant: { name: "GiroFood Pro", email: "demo@girofood.com.br", photo: "" },
+  categories: [],
+  restaurant: { name: "GiroFood Pro", email: DEMO_ACCOUNT.email, photo: "", logo: "" },
 };
 
 let state = loadState();
-let demoSessionPassword = "girofood123";
+let demoSessionPassword = DEMO_ACCOUNT.password;
 let activeView = "orders";
 let customerQuery = "";
 let productQuery = "";
@@ -53,12 +56,16 @@ function loadState() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return structuredClone(initialState);
     const parsed = JSON.parse(saved);
+    const restaurant = { ...initialState.restaurant, ...(parsed.restaurant || {}) };
+    if (restaurant.email === "demo@girofood.com.br") restaurant.email = DEMO_ACCOUNT.email;
     return {
       ...structuredClone(initialState),
       ...parsed,
       customers: Array.isArray(parsed.customers) ? parsed.customers : structuredClone(initialState.customers),
       products: Array.isArray(parsed.products) ? parsed.products : structuredClone(initialState.products),
       orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+      categories: Array.isArray(parsed.categories) ? parsed.categories : [],
+      restaurant,
     };
   } catch (error) {
     console.error("Não foi possível carregar os dados locais do GiroFood.", error);
@@ -107,7 +114,9 @@ function toast(message, error = false) {
 }
 
 function appLogo() {
-  return `<div class="brand"><img class="brand-logo" src="/logo.png" alt="GiroFood"></div>`;
+  const logo = state.restaurant.logo || "/logo.png";
+  const name = state.restaurant.name || "GiroFood";
+  return `<div class="brand"><img class="brand-logo" src="${escapeHtml(logo)}" alt="${escapeHtml(name)}"></div>`;
 }
 
 function renderLogin() {
@@ -127,12 +136,12 @@ function renderLogin() {
           <h2>Acesse sua conta</h2>
           <p>Gerencie seus pedidos de forma simples e rápida</p>
           <div class="field"><label for="login-email">E-mail ou Usuário</label><input id="login-email" name="email" type="email" autocomplete="username" placeholder="exemplo@girofood.com.br" required value="${escapeHtml(state.restaurant.email)}"></div>
-          <div class="field"><label for="login-password">Senha</label><div class="password-wrap"><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha de acesso" required><button class="password-toggle" type="button" aria-label="Mostrar senha" data-action="toggle-password">◉</button></div></div>
+          <div class="field"><label for="login-password">Senha</label><div class="password-wrap"><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Digite sua senha de acesso" required value="${state.restaurant.email.toLowerCase() === DEMO_ACCOUNT.email ? escapeHtml(DEMO_ACCOUNT.password) : ""}"><button class="password-toggle" type="button" aria-label="Mostrar senha" data-action="toggle-password">◉</button></div></div>
           <div class="forgot-row"><button type="button" class="text-button" data-action="forgot-password">Esqueceu sua senha?</button></div>
           <button class="primary-button wide" type="submit">Entrar no GiroFood</button>
           <div class="divider">ou</div>
           <div class="signup-note">Não tem conta? <button type="button" class="text-button" data-action="signup">Cadastre seu restaurante</button></div>
-          <div class="demo-note">Ambiente demonstrativo: os dados ficam salvos somente neste navegador.<br>Conta de demonstração: demo@girofood.com.br / girofood123</div>
+          <div class="demo-note">Ambiente demonstrativo: os dados ficam salvos somente neste navegador.<br>Conta de demonstração: ${DEMO_ACCOUNT.email} / ${DEMO_ACCOUNT.password}</div>
         </form>
       </section>
     </main>`;
@@ -204,7 +213,10 @@ function renderCustomers() {
 }
 
 function categories() {
-  return ["Todas as categorias", ...new Set(state.products.map((product) => product.category).filter(Boolean))];
+  const names = [...(state.categories || []), ...state.products.map((product) => product.category)]
+    .filter((name) => typeof name === "string" && name.trim())
+    .filter((name, index, list) => list.findIndex((item) => item.toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR")) === index);
+  return ["Todas as categorias", ...names];
 }
 
 function renderProducts() {
@@ -218,7 +230,7 @@ function renderProducts() {
       <button class="icon-button" type="button" title="Editar produto" aria-label="Editar produto" data-action="edit-product" data-id="${product.id}">✎</button>
       <button class="icon-button delete" type="button" title="Excluir produto" aria-label="Excluir produto" data-action="delete-product" data-id="${product.id}">▣</button>
     </div></div></article>`).join("") : `<div class="empty-state">Nenhum produto encontrado.</div>`;
-  return `${heading("Cardápio", "Gerencie os produtos do seu negócio", `<button class="primary-button" type="button" data-action="new-product">＋ Adicionar produto</button>`)}
+  return `${heading("Cardápio", "Gerencie os produtos do seu negócio", `<div class="heading-actions"><button class="secondary-button" type="button" data-action="new-category">＋ Criar categoria</button><button class="primary-button" type="button" data-action="new-product">＋ Adicionar produto</button></div>`)}
     <div class="toolbar">
       <div class="search-wrap"><input class="search-input" id="product-search" type="search" placeholder="Buscar produto..." value="${escapeHtml(productQuery)}"></div>
       <select class="select-control" id="category-filter" aria-label="Filtrar por categoria">${categories().map((category) => `<option${category === categoryFilter ? " selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select>
@@ -291,14 +303,17 @@ function renderOrders() {
 
 function renderSettings() {
   return `${heading("Configurações", "Gerencie os dados de acesso do seu restaurante")}
-    <section class="login-card" style="margin:0;box-shadow:none">
-      <h2 style="text-align:left;margin-bottom:20px">Perfil do restaurante</h2>
-      <form id="settings-form">
+    <section class="settings-card">
+      <div class="settings-heading"><span class="settings-eyebrow">PERSONALIZAÇÃO</span><h2>Perfil do restaurante</h2><p>Atualize as informações e a identidade visual do seu negócio.</p></div>
+      <form id="settings-form" class="settings-grid">
         <div class="field"><label for="restaurant-name">Nome do restaurante</label><input id="restaurant-name" name="name" required value="${escapeHtml(state.restaurant.name)}"></div>
         <div class="field"><label for="restaurant-email">E-mail</label><input id="restaurant-email" name="email" type="email" required value="${escapeHtml(state.restaurant.email)}"></div>
         <div class="field"><label for="restaurant-photo">Foto de perfil (URL)</label><input id="restaurant-photo" name="photo" type="url" placeholder="https://..." value="${escapeHtml(state.restaurant.photo)}"></div>
-        <button class="primary-button" type="submit">Salvar alterações</button>
-        <button class="secondary-button" type="button" style="margin-left:7px" data-action="logout">Sair da conta</button>
+        <div class="field span-2"><label for="restaurant-logo">Logo do restaurante</label><div class="logo-editor">
+          <div class="logo-preview">${state.restaurant.logo ? `<img src="${escapeHtml(state.restaurant.logo)}" alt="Prévia da logo">` : `<span>Prévia da logo</span>`}</div>
+          <div class="logo-upload"><input id="restaurant-logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp"><p>Envie uma imagem PNG, JPG ou WebP de até 1 MB. Ela será exibida na navegação e nas telas do sistema.</p>${state.restaurant.logo ? `<button class="text-button" type="button" data-action="remove-logo">Remover logo personalizada</button>` : ""}</div>
+        </div></div>
+        <div class="settings-actions"><button class="primary-button" type="submit">Salvar alterações</button><button class="secondary-button" type="button" data-action="logout">Sair da conta</button></div>
       </form>
       <div class="demo-note">Esta demonstração salva as informações no armazenamento local deste navegador. Não use dados reais ou senhas pessoais.</div>
     </section>`;
@@ -318,8 +333,8 @@ function render() {
       <div class="sidebar-promo"><b>GiroFood Pro</b><p>Desbloqueie integrações diretas com iFood, WhatsApp e outros.</p></div>
     </aside>
     <main class="main-area">
-      <header class="mobile-header">${appLogo()}<div style="display:flex;align-items:center;gap:12px"><button class="top-icon" type="button" aria-label="Notificações">♧</button>${profileButton()}</div></header>
-      <div class="topbar"><button class="top-icon" type="button" aria-label="Notificações">♧<span class="notification-dot">${state.orders.filter((order) => order.status === "received").length}</span></button>${profileButton()}</div>
+      <header class="mobile-header">${appLogo()}<div style="display:flex;align-items:center;gap:12px"><button class="top-icon" type="button" title="Abrir alertas" aria-label="Abrir alertas" data-action="notifications">🔔${state.orders.some((order) => order.status === "received") ? `<span class="notification-dot">${state.orders.filter((order) => order.status === "received").length}</span>` : ""}</button>${profileButton()}</div></header>
+      <div class="topbar"><button class="top-icon" type="button" title="Abrir alertas" aria-label="Abrir alertas" data-action="notifications">🔔${state.orders.some((order) => order.status === "received") ? `<span class="notification-dot">${state.orders.filter((order) => order.status === "received").length}</span>` : ""}</button>${profileButton()}</div>
       ${view}
     </main>
     <nav class="mobile-nav" aria-label="Navegação móvel">${[["orders", "▧", "Pedidos"], ["menu", "◫", "Cardápio"], ["customers", "♙", "Clientes"], ["settings", "⚙", "Config."]].map(([key, icon, label]) => `<button type="button" class="${activeView === key ? "active" : ""}" data-view="${key}"><span>${icon}</span>${label}</button>`).join("")}</nav>
@@ -365,13 +380,39 @@ function attachViewListeners() {
   });
   document.querySelector("#settings-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const values = new FormData(event.currentTarget);
-    state.restaurant.name = values.get("name").trim();
-    state.restaurant.email = values.get("email").trim();
-    state.restaurant.photo = values.get("photo").trim();
-    saveState();
-    toast("Configurações salvas!");
-    render();
+    const form = event.currentTarget;
+    const values = new FormData(form);
+    const file = values.get("logo");
+    const saveSettings = async () => {
+      if (file.size > MAX_LOGO_SIZE) return toast("A logo deve ter no máximo 1 MB.", true);
+      if (file.size && !["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+        return toast("Use uma imagem PNG, JPG ou WebP para a logo.", true);
+      }
+      const previousRestaurant = state.restaurant;
+      try {
+        const logo = file.size ? await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error || new Error("Falha ao ler o arquivo."));
+          reader.readAsDataURL(file);
+        }) : state.restaurant.logo;
+        state.restaurant = {
+          ...state.restaurant,
+          name: values.get("name").trim(),
+          email: values.get("email").trim(),
+          photo: values.get("photo").trim(),
+          logo,
+        };
+        saveState();
+      } catch (error) {
+        state.restaurant = previousRestaurant;
+        console.error("Não foi possível salvar as configurações do restaurante.", error);
+        return toast("Não foi possível salvar as configurações. Verifique o espaço disponível no navegador.", true);
+      }
+      toast("Configurações salvas!");
+      render();
+    };
+    void saveSettings();
   });
   document.querySelectorAll(".order-card").forEach((card) => {
     card.addEventListener("dragstart", (event) => event.dataTransfer.setData("text/plain", card.dataset.orderId));
@@ -423,6 +464,39 @@ function modal(title, content, onSubmit) {
 
 function closeModal() {
   document.querySelector("#modal-root").innerHTML = "";
+}
+
+function openAlerts() {
+  const alerts = state.orders
+    .filter((order) => order.status === "received")
+    .sort((a, b) => b.createdAt - a.createdAt);
+  const content = alerts.length ? `<div class="alert-list">${alerts.map((order) => `
+    <article class="alert-item">
+      <div><b>Novo pedido #${escapeHtml(order.number)}</b><p>${escapeHtml(customerName(order))} · ${new Date(order.createdAt).toLocaleString("pt-BR")}</p><strong>${currency(orderTotal(order))}</strong></div>
+      <button class="soft-button" type="button" data-action="view-alert-order" data-id="${escapeHtml(order.id)}">Ver pedido</button>
+    </article>`).join("")}</div>` : `<div class="empty-state">Tudo em dia! Você não tem novos pedidos.</div>`;
+  modal("Central de alertas", content);
+}
+
+function openCategoryForm() {
+  modal("Criar categoria", `<form><div class="field"><label for="category-name">Nome da categoria *</label><input id="category-name" name="name" required maxlength="40" placeholder="Ex.: Pratos principais"></div><div class="modal-actions"><button class="secondary-button" type="button" data-action="close-modal">Cancelar</button><button class="primary-button" type="submit">Criar categoria</button></div></form>`, (form) => {
+    const name = String(form.get("name") || "").trim();
+    if (!name) return toast("Informe o nome da categoria.", true);
+    if (categories().slice(1).some((category) => category.toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"))) {
+      return toast("Essa categoria já existe.", true);
+    }
+    state.categories.push(name);
+    try {
+      saveState();
+    } catch (error) {
+      state.categories.pop();
+      console.error("Não foi possível salvar a categoria.", error);
+      return toast("Não foi possível salvar a categoria neste navegador.", true);
+    }
+    closeModal();
+    render();
+    toast("Categoria criada!");
+  });
 }
 
 function customerForm(customer = {}) {
@@ -521,6 +595,28 @@ document.addEventListener("click", (event) => {
   if (!button) return;
   const { action, id } = button.dataset;
   if (action === "close-modal") closeModal();
+  if (action === "notifications") openAlerts();
+  if (action === "new-category") openCategoryForm();
+  if (action === "remove-logo") {
+    const previousLogo = state.restaurant.logo;
+    state.restaurant.logo = "";
+    try {
+      saveState();
+    } catch (error) {
+      state.restaurant.logo = previousLogo;
+      console.error("Não foi possível remover a logo.", error);
+      return toast("Não foi possível remover a logo neste navegador.", true);
+    }
+    render();
+    toast("Logo personalizada removida.");
+  }
+  if (action === "view-alert-order") {
+    closeModal();
+    activeView = "orders";
+    orderFilter = "received";
+    orderQuery = "";
+    render();
+  }
   if (action === "new-customer") openCustomerForm();
   if (action === "edit-customer") {
     const customer = state.customers.find((item) => item.id === id);
@@ -575,7 +671,7 @@ function openSignup() {
   modal("Cadastrar restaurante", `<form><div class="field"><label for="signup-name">Nome do restaurante *</label><input id="signup-name" name="name" required maxlength="100"></div><div class="field"><label for="signup-email">E-mail *</label><input id="signup-email" name="email" type="email" required></div><div class="field"><label for="signup-password">Senha *</label><input id="signup-password" name="password" type="password" required minlength="8"></div><div class="modal-actions"><button class="secondary-button" type="button" data-action="close-modal">Cancelar</button><button class="primary-button" type="submit">Criar conta</button></div></form>`, (form) => {
     const values = Object.fromEntries(form.entries());
     if (String(values.password).length < 8) return toast("A senha deve ter pelo menos 8 caracteres.", true);
-    state.restaurant = { name: String(values.name).trim(), email: String(values.email).trim(), photo: "" };
+    state.restaurant = { ...initialState.restaurant, name: String(values.name).trim(), email: String(values.email).trim(), photo: "" };
     demoSessionPassword = String(values.password);
     saveState();
     sessionStorage.setItem("girofood-auth", "true");
