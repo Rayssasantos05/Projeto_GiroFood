@@ -79,6 +79,7 @@ let productQuery = "";
 let orderQuery = "";
 let categoryFilter = "Todas as categorias";
 let orderFilter = "Todos";
+let reportPeriod = "day";
 let activeBanner = 0;
 let bannerTimer;
 
@@ -179,7 +180,9 @@ function renderLogin() {
 }
 
 const navigation = [
+  ["dashboard", "▦", "Dashboard"],
   ["orders", "▧", "Pedidos (Vendas)"],
+  ["finance", "R$", "Financeiro"],
   ["menu", "◫", "Cardápio"],
   ["customers", "♙", "Cadastro de Clientes"],
   ["settings", "⚙", "Configurações"],
@@ -286,6 +289,93 @@ function orderTotal(order) {
   }, 0);
 }
 
+const reportPeriods = {
+  day: "Hoje",
+  week: "Últimos 7 dias",
+  month: "Este mês",
+};
+const reportStatuses = [
+  ["received", "Recebidos"],
+  ["accepted", "Aceitos"],
+  ["ready", "Prontos"],
+  ["shipped", "Em entrega"],
+  ["delivered", "Entregues"],
+  ["cancelled", "Cancelados"],
+];
+
+function ordersInReportPeriod() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  if (reportPeriod === "week") start.setDate(start.getDate() - 6);
+  if (reportPeriod === "month") start.setDate(1);
+  return state.orders.filter((order) => {
+    const createdAt = new Date(order.createdAt);
+    return !Number.isNaN(createdAt.getTime()) && createdAt >= start && createdAt <= now;
+  });
+}
+
+function reportPeriodFilter() {
+  return `<label class="report-filter">Período<select class="select-control" id="report-period" aria-label="Filtrar por período">${Object.entries(reportPeriods).map(([value, label]) => `<option value="${value}"${reportPeriod === value ? " selected" : ""}>${label}</option>`).join("")}</select></label>`;
+}
+
+function renderDashboard() {
+  const orders = ordersInReportPeriod();
+  const delivered = orders.filter((order) => order.status === "delivered").length;
+  const cancelled = orders.filter((order) => order.status === "cancelled").length;
+  const inProgress = orders.filter((order) => !["delivered", "cancelled"].includes(order.status)).length;
+  const total = orders.length;
+  const statuses = reportStatuses.map(([status, label]) => ({
+    label,
+    count: orders.filter((order) => order.status === status).length,
+  }));
+  return `${heading("Dashboard", "Acompanhe o movimento do seu restaurante") }
+    <div class="report-toolbar">${reportPeriodFilter()}<span class="report-period-note">${reportPeriods[reportPeriod]}</span></div>
+    <section class="report-cards" aria-label="Indicadores de pedidos">
+      <article class="report-card"><span class="report-card-icon orange">▦</span><div><p>Pedidos feitos</p><strong>${total}</strong><small>${reportPeriods[reportPeriod]}</small></div></article>
+      <article class="report-card"><span class="report-card-icon green">✓</span><div><p>Entregues</p><strong>${delivered}</strong><small>${total ? `${Math.round((delivered / total) * 100)}% dos pedidos` : "Sem pedidos no período"}</small></div></article>
+      <article class="report-card"><span class="report-card-icon red">×</span><div><p>Cancelados</p><strong>${cancelled}</strong><small>${total ? `${Math.round((cancelled / total) * 100)}% dos pedidos` : "Sem pedidos no período"}</small></div></article>
+      <article class="report-card"><span class="report-card-icon amber">↗</span><div><p>Em andamento</p><strong>${inProgress}</strong><small>Inclui pedidos em entrega</small></div></article>
+    </section>
+    <section class="report-panel">
+      <div class="report-panel-heading"><div><h2>Pedidos por etapa</h2><p>Distribuição dos pedidos no período selecionado</p></div><span class="report-total">${total} ${total === 1 ? "pedido" : "pedidos"}</span></div>
+      ${total ? `<div class="status-breakdown">${statuses.map(({ label, count }) => `<div class="status-row"><span>${label}</span><div class="status-track"><span class="status-fill" style="width:${Math.round((count / total) * 100)}%"></span></div><b>${count}</b></div>`).join("")}</div>` : `<div class="empty-state">Nenhum pedido encontrado neste período.</div>`}
+    </section>`;
+}
+
+function renderFinance() {
+  const orders = ordersInReportPeriod();
+  const deliveredOrders = orders.filter((order) => order.status === "delivered");
+  const openOrders = orders.filter((order) => !["delivered", "cancelled"].includes(order.status));
+  const cancelledOrders = orders.filter((order) => order.status === "cancelled");
+  const revenue = deliveredOrders.reduce((sum, order) => sum + orderTotal(order), 0);
+  const pending = openOrders.reduce((sum, order) => sum + orderTotal(order), 0);
+  const cancelledValue = cancelledOrders.reduce((sum, order) => sum + orderTotal(order), 0);
+  const averageTicket = deliveredOrders.length ? revenue / deliveredOrders.length : 0;
+  const soldProducts = new Map();
+  deliveredOrders.forEach((order) => order.items.forEach((item) => {
+    const product = state.products.find((candidate) => candidate.id === item.productId);
+    const name = product?.name || "Produto removido";
+    const current = soldProducts.get(item.productId) || { name, quantity: 0 };
+    current.quantity += Number(item.quantity) || 0;
+    soldProducts.set(item.productId, current);
+  }));
+  const topProducts = [...soldProducts.values()].sort((a, b) => b.quantity - a.quantity).slice(0, 3);
+  return `${heading("Financeiro", "Resumo de faturamento e valores dos pedidos") }
+    <div class="report-toolbar">${reportPeriodFilter()}<span class="report-period-note">${reportPeriods[reportPeriod]}</span></div>
+    <section class="report-cards finance-cards" aria-label="Indicadores financeiros">
+      <article class="report-card"><span class="report-card-icon green">R$</span><div><p>Faturamento bruto</p><strong>${currency(revenue)}</strong><small>Pedidos entregues</small></div></article>
+      <article class="report-card"><span class="report-card-icon amber">◷</span><div><p>Em andamento</p><strong>${currency(pending)}</strong><small>${openOrders.length} ${openOrders.length === 1 ? "pedido" : "pedidos"} ainda não entregues</small></div></article>
+      <article class="report-card"><span class="report-card-icon red">×</span><div><p>Cancelamentos</p><strong>${currency(cancelledValue)}</strong><small>${cancelledOrders.length} ${cancelledOrders.length === 1 ? "pedido cancelado" : "pedidos cancelados"}</small></div></article>
+      <article class="report-card"><span class="report-card-icon orange">↗</span><div><p>Ticket médio</p><strong>${currency(averageTicket)}</strong><small>Por pedido entregue</small></div></article>
+    </section>
+    <section class="report-panel finance-panel">
+      <div class="report-panel-heading"><div><h2>Produtos mais vendidos</h2><p>Quantidade em pedidos entregues no período</p></div></div>
+      ${topProducts.length ? `<div class="top-products">${topProducts.map((product, index) => `<div class="top-product"><span class="top-product-rank">${index + 1}</span><b>${escapeHtml(product.name)}</b><span>${product.quantity} ${product.quantity === 1 ? "unidade" : "unidades"}</span></div>`).join("")}</div>` : `<div class="empty-state">Ainda não há vendas entregues neste período.</div>`}
+    </section>
+    <p class="finance-disclaimer">Visão demonstrativa: considera o valor dos itens dos pedidos entregues. Pedidos antigos sem preço salvo usam o preço atual do cardápio. Custos, taxas, descontos e formas de pagamento não são registrados; este valor não representa lucro líquido.</p>`;
+}
+
 function renderOrderCard(order) {
   const date = new Date(order.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const items = order.items.map((item) => `${item.quantity}× ${escapeHtml(state.products.find((p) => p.id === item.productId)?.name || "Produto removido")}`).join("<br>");
@@ -383,10 +473,12 @@ function render() {
     renderLogin();
     return;
   }
-  const view = activeView === "menu" ? renderProducts()
-    : activeView === "customers" ? renderCustomers()
-      : activeView === "settings" ? renderSettings()
-        : renderOrders();
+  const view = activeView === "dashboard" ? renderDashboard()
+    : activeView === "finance" ? renderFinance()
+      : activeView === "menu" ? renderProducts()
+        : activeView === "customers" ? renderCustomers()
+          : activeView === "settings" ? renderSettings()
+            : renderOrders();
   document.querySelector("#app").innerHTML = `<div class="app-shell">
     <aside class="sidebar">${appLogo()}<nav class="nav-list" aria-label="Navegação principal">${navigation.map(([key, icon, label]) => navButton(key, icon, label)).join("")}</nav>
       <div class="sidebar-promo"><b>GiroFood Pro</b><p>Desbloqueie integrações diretas com iFood, WhatsApp e outros.</p></div>
@@ -396,7 +488,7 @@ function render() {
       <div class="topbar"><button class="top-icon" type="button" title="Abrir alertas" aria-label="Abrir alertas" data-action="notifications">🔔${state.orders.some((order) => order.status === "received") ? `<span class="notification-dot">${state.orders.filter((order) => order.status === "received").length}</span>` : ""}</button>${profileButton()}</div>
       ${view}
     </main>
-    <nav class="mobile-nav" aria-label="Navegação móvel">${[["orders", "▧", "Pedidos"], ["menu", "◫", "Cardápio"], ["customers", "♙", "Clientes"], ["settings", "⚙", "Config."]].map(([key, icon, label]) => `<button type="button" class="${activeView === key ? "active" : ""}" data-view="${key}"><span>${icon}</span>${label}</button>`).join("")}</nav>
+    <nav class="mobile-nav" aria-label="Navegação móvel">${[["dashboard", "▦", "Painel"], ["orders", "▧", "Pedidos"], ["finance", "R$", "Financeiro"], ["menu", "◫", "Cardápio"], ["customers", "♙", "Clientes"], ["settings", "⚙", "Config."]].map(([key, icon, label]) => `<button type="button" class="${activeView === key ? "active" : ""}" data-view="${key}"><span>${icon}</span>${label}</button>`).join("")}</nav>
   </div>`;
   attachViewListeners();
 }
@@ -464,6 +556,10 @@ function attachViewListeners() {
   });
   document.querySelector("#category-filter")?.addEventListener("change", (event) => {
     categoryFilter = event.target.value;
+    render();
+  });
+  document.querySelector("#report-period")?.addEventListener("change", (event) => {
+    reportPeriod = event.target.value;
     render();
   });
   document.querySelector("#order-filter")?.addEventListener("change", (event) => {
@@ -670,10 +766,15 @@ function orderForm() {
 function openOrderForm() {
   modal("Inserir pedido manual", orderForm(), (values, form) => {
     const fields = [...form.querySelectorAll(".order-item")];
-    const items = fields.map((row) => ({
-      productId: row.querySelector("[name=productId]").value,
-      quantity: Math.max(1, Number(row.querySelector("[name=quantity]").value)),
-    }));
+    const items = fields.map((row) => {
+      const productId = row.querySelector("[name=productId]").value;
+      const product = state.products.find((item) => item.id === productId);
+      return {
+        productId,
+        quantity: Math.max(1, Number(row.querySelector("[name=quantity]").value)),
+        price: Number(product?.price) || 0,
+      };
+    });
     if (!items.length || items.some((item) => !item.productId)) return toast("Adicione ao menos um produto.", true);
     const order = {
       id: crypto.randomUUID(),
