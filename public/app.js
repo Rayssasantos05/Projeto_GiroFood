@@ -18,33 +18,92 @@ const GALLERY = [
 ];
 const SYSTEM_BANNERS = [
   {
-    eyebrow: "SEU NEGÓCIO, DO SEU JEITO",
-    title: "Mais sabor. Mais controle. Mais Giro.",
-    description: "Seu restaurante em movimento, com pedidos e cardápio organizados em um só lugar.",
-    action: "Explorar cardápio",
-    view: "menu",
+    eyebrow: "SEU NEGÓCIO EM UM SÓ LUGAR",
+    title: "Acompanhe o ritmo do seu restaurante.",
+    description: "Veja pedidos, entregas e resultados do período em um painel feito para você.",
+    action: "Ver pedidos",
+    view: "orders",
     image: "https://images.pexels.com/photos/315755/pexels-photo-315755.jpeg?auto=compress&cs=tinysrgb&w=1400",
     accent: "banner-citrus",
   },
   {
-    eyebrow: "PEDIDO BOM É PEDIDO BEM CUIDADO",
-    title: "Do primeiro clique até a entrega.",
-    description: "Acompanhe cada etapa e mantenha tudo fluindo na sua cozinha.",
-    action: "Ver pedidos",
-    view: "orders",
+    eyebrow: "ORGANIZAÇÃO QUE DÁ RESULTADO",
+    title: "Cada pedido conta uma história.",
+    description: "Acompanhe o fluxo da cozinha e mantenha sua operação sempre em movimento.",
+    action: "Abrir financeiro",
+    view: "finance",
     image: "https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1400",
     accent: "banner-tomato",
   },
   {
-    eyebrow: "QUEM VOLTA, FAZ PARTE DA CASA",
-    title: "Cuide de cada cliente como único.",
-    description: "Tenha os contatos e o histórico de pedidos sempre à mão.",
-    action: "Ver clientes",
-    view: "customers",
+    eyebrow: "SEUS RESULTADOS, SEM COMPLICAÇÃO",
+    title: "Decisões melhores começam com dados.",
+    description: "Consulte o faturamento demonstrativo e descubra os produtos que mais saem.",
+    action: "Ver financeiro",
+    view: "finance",
     image: "https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg?auto=compress&cs=tinysrgb&w=1400",
     accent: "banner-pepper",
   },
 ];
+const LEGACY_DEMO_ORDER_IDS = new Set([
+  "demo-order-001",
+  "demo-order-002",
+  "demo-order-003",
+  "demo-order-004",
+  "demo-order-005",
+]);
+const DEMO_PRODUCTS = [
+  { id: "p1", price: 48.9 },
+  { id: "p2", price: 34.5 },
+  { id: "p3", price: 22 },
+  { id: "p4", price: 6.5 },
+  { id: "p5", price: 18 },
+];
+
+function createDemoOrders() {
+  const dailyCounts = [7, 5, 6, 4, 5, 3, 6, 4, 5, 7, 3, 4, 6, 5, 4, 3, 6, 4, 5, 6, 3, 4, 5, 6, 4, 3, 5, 4, 6, 5];
+  const statusCycle = ["delivered", "accepted", "delivered", "received", "delivered", "cancelled", "delivered", "shipped", "ready", "delivered"];
+  const orders = [];
+  let sequence = 0;
+
+  dailyCounts.forEach((count, daysAgo) => {
+    for (let index = 0; index < count; index += 1) {
+      const createdAt = new Date();
+      if (daysAgo === 0) {
+        const minuteOfDay = Math.max(0, createdAt.getHours() * 60 + createdAt.getMinutes() - index * 25);
+        createdAt.setHours(Math.floor(minuteOfDay / 60), minuteOfDay % 60, 0, 0);
+      } else {
+        createdAt.setDate(createdAt.getDate() - daysAgo);
+        createdAt.setHours(11 + ((sequence * 7) % 10), (sequence * 13) % 60, 0, 0);
+      }
+
+      const primaryProduct = DEMO_PRODUCTS[sequence % DEMO_PRODUCTS.length];
+      const items = [{
+        productId: primaryProduct.id,
+        quantity: sequence % 6 === 0 ? 2 : 1,
+        price: primaryProduct.price,
+      }];
+      if (sequence % 3 === 0) {
+        const extraProduct = DEMO_PRODUCTS[(sequence + 2) % DEMO_PRODUCTS.length];
+        items.push({ productId: extraProduct.id, quantity: 1, price: extraProduct.price });
+      }
+
+      orders.push({
+        id: `demo-order-sample-${String(sequence + 1).padStart(3, "0")}`,
+        number: String(sequence + 101).padStart(3, "0"),
+        customerId: `c${(sequence % 5) + 1}`,
+        status: statusCycle[sequence % statusCycle.length],
+        items,
+        notes: "",
+        createdAt: createdAt.getTime(),
+      });
+      sequence += 1;
+    }
+  });
+
+  return orders;
+}
+
 const initialState = {
   customers: [
     { id: "c1", name: "Carlos Eduardo Silva", phone: "(11) 98765-4321", email: "carlos.silva@gmail.com", address: "Av. Paulista, 1000 - Bela Vista", photo: CUSTOMER_PHOTOS[0] },
@@ -60,13 +119,8 @@ const initialState = {
     { id: "p4", name: "Refrigerante Guaraná 350ml", category: "Bebidas", description: "Lata trincando de gelada para acompanhar seu pedido.", price: 6.5, image: GALLERY[3], active: true },
     { id: "p5", name: "Batata Frita Rústica", category: "Acompanhamentos", description: "Batatas rústicas fritas na hora com sal de páprica e alecrim fresco.", price: 18, image: GALLERY[4], active: false },
   ],
-  orders: [
-    { id: "demo-order-001", number: "001", customerId: "c1", status: "delivered", items: [{ productId: "p1", quantity: 1 }], notes: "", createdAt: Date.now() - 3_600_000 },
-    { id: "demo-order-002", number: "002", customerId: "c2", status: "received", items: [{ productId: "p2", quantity: 1 }, { productId: "p4", quantity: 1 }], notes: "Sem cebola, por favor.", createdAt: Date.now() - 1_200_000 },
-    { id: "demo-order-003", number: "003", customerId: "c3", status: "accepted", items: [{ productId: "p3", quantity: 2 }], notes: "Adicionar colher e guardanapos.", createdAt: Date.now() - 900_000 },
-    { id: "demo-order-004", number: "004", customerId: "c4", status: "ready", items: [{ productId: "p5", quantity: 1 }, { productId: "p4", quantity: 1 }], notes: "", createdAt: Date.now() - 600_000 },
-    { id: "demo-order-005", number: "005", customerId: "c5", status: "shipped", items: [{ productId: "p1", quantity: 1 }], notes: "Entregar na portaria.", createdAt: Date.now() - 300_000 },
-  ],
+  orders: createDemoOrders(),
+  demoDataVersion: 2,
   categories: [],
   restaurant: { name: "GiroFood Pro", email: DEMO_ACCOUNT.email, photo: "", logo: "" },
 };
@@ -90,15 +144,30 @@ function loadState() {
     const parsed = JSON.parse(saved);
     const restaurant = { ...initialState.restaurant, ...(parsed.restaurant || {}) };
     if (restaurant.email === "demo@girofood.com.br") restaurant.email = DEMO_ACCOUNT.email;
-    return {
+    const savedOrders = Array.isArray(parsed.orders) ? parsed.orders : [];
+    const migrateDemoOrders = restaurant.email === DEMO_ACCOUNT.email
+      && savedOrders.some((order) => LEGACY_DEMO_ORDER_IDS.has(order.id));
+    const orders = migrateDemoOrders
+      ? [...initialState.orders, ...savedOrders.filter((order) => !LEGACY_DEMO_ORDER_IDS.has(order.id))]
+      : savedOrders;
+    const loadedState = {
       ...structuredClone(initialState),
       ...parsed,
       customers: Array.isArray(parsed.customers) ? parsed.customers : structuredClone(initialState.customers),
       products: Array.isArray(parsed.products) ? parsed.products : structuredClone(initialState.products),
-      orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+      orders,
       categories: Array.isArray(parsed.categories) ? parsed.categories : [],
       restaurant,
+      demoDataVersion: 2,
     };
+    if (migrateDemoOrders) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedState));
+      } catch (error) {
+        console.error("Não foi possível atualizar os dados demonstrativos dos pedidos.", error);
+      }
+    }
+    return loadedState;
   } catch (error) {
     console.error("Não foi possível carregar os dados locais do GiroFood.", error);
     return structuredClone(initialState);
@@ -173,7 +242,7 @@ function renderLogin() {
           <button class="primary-button wide" type="submit">Entrar no GiroFood</button>
           <div class="divider">ou</div>
           <div class="signup-note">Não tem conta? <button type="button" class="text-button" data-action="signup">Cadastre seu restaurante</button></div>
-          <div class="demo-note">Ambiente demonstrativo: os dados ficam salvos somente neste navegador.<br>Conta de demonstração: ${DEMO_ACCOUNT.email} / ${DEMO_ACCOUNT.password}</div>
+          <div class="demo-note">Ambiente demonstrativo: os dados ficam salvos somente neste navegador.</div>
         </form>
       </section>
     </main>`;
@@ -319,17 +388,103 @@ function reportPeriodFilter() {
   return `<label class="report-filter">Período<select class="select-control" id="report-period" aria-label="Filtrar por período">${Object.entries(reportPeriods).map(([value, label]) => `<option value="${value}"${reportPeriod === value ? " selected" : ""}>${label}</option>`).join("")}</select></label>`;
 }
 
+function reportBuckets() {
+  const now = new Date();
+  const orders = ordersInReportPeriod();
+  let starts;
+  let labelForDate;
+  if (reportPeriod === "day") {
+    starts = Array.from({ length: 8 }, (_, index) => {
+      const start = new Date(now);
+      start.setMinutes(0, 0, 0);
+      start.setHours(start.getHours() - (7 - index));
+      return start;
+    });
+    labelForDate = (date) => `${String(date.getHours()).padStart(2, "0")}h`;
+  } else if (reportPeriod === "week") {
+    const firstDay = new Date(now);
+    firstDay.setHours(0, 0, 0, 0);
+    firstDay.setDate(firstDay.getDate() - 6);
+    starts = Array.from({ length: 7 }, (_, index) => {
+      const start = new Date(firstDay);
+      start.setDate(start.getDate() + index);
+      return start;
+    });
+    labelForDate = (date) => date.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+  } else {
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    starts = Array.from({ length: now.getDate() }, (_, index) => new Date(firstDay.getFullYear(), firstDay.getMonth(), index + 1));
+    labelForDate = (date) => String(date.getDate());
+  }
+  return starts.map((start, index) => {
+    const end = new Date(start);
+    if (reportPeriod === "day") end.setHours(end.getHours() + 1);
+    else end.setDate(end.getDate() + 1);
+    return {
+      label: labelForDate(start),
+      orders: orders.filter((order) => {
+        const createdAt = new Date(order.createdAt);
+        return createdAt >= start && createdAt < end;
+      }),
+      showLabel: reportPeriod !== "month" || index % 5 === 0 || index === starts.length - 1,
+    };
+  });
+}
+
+function compactCurrency(value) {
+  if (value >= 1000) return `R$ ${(value / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  return `R$ ${Math.round(value)}`;
+}
+
+function renderTrendChart(title, description, buckets, values, formatValue) {
+  const width = 760;
+  const height = 235;
+  const left = 78;
+  const right = 18;
+  const top = 14;
+  const bottom = 35;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const maxValue = Math.max(1, ...values);
+  const ceiling = maxValue * 1.15;
+  const points = values.map((value, index) => ({
+    x: left + (values.length > 1 ? (index / (values.length - 1)) * plotWidth : plotWidth / 2),
+    y: top + plotHeight - (value / ceiling) * plotHeight,
+    value,
+  }));
+  const line = points.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+  const area = `${line} L ${points[points.length - 1].x} ${top + plotHeight} L ${points[0].x} ${top + plotHeight} Z`;
+  const grid = Array.from({ length: 5 }, (_, index) => {
+    const y = top + (plotHeight / 4) * index;
+    const value = ceiling * (1 - index / 4);
+    return `<g class="chart-grid"><line x1="${left}" y1="${y}" x2="${width - right}" y2="${y}"></line><text x="${left - 9}" y="${y + 3}" text-anchor="end">${escapeHtml(formatValue(value))}</text></g>`;
+  }).join("");
+  const marks = points.map((point, index) => `<g class="chart-point"><circle cx="${point.x}" cy="${point.y}" r="4"><title>${escapeHtml(buckets[index].label)}: ${escapeHtml(formatValue(point.value))}</title></circle></g>`).join("");
+  const labels = buckets.map((bucket, index) => bucket.showLabel
+    ? `<text class="chart-label" x="${points[index].x}" y="${height - 8}" text-anchor="middle">${escapeHtml(bucket.label)}</text>`
+    : "").join("");
+  return `<section class="report-panel report-chart-panel">
+    <div class="report-panel-heading"><div><h2>${title}</h2><p>${description}</p></div></div>
+    <div class="chart-scroll"><svg class="report-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}">
+      <title>${title}</title>${grid}
+      <path class="chart-area" d="${area}"></path><path class="chart-line" d="${line}"></path>${marks}${labels}
+    </svg></div>
+  </section>`;
+}
+
 function renderDashboard() {
   const orders = ordersInReportPeriod();
   const delivered = orders.filter((order) => order.status === "delivered").length;
   const cancelled = orders.filter((order) => order.status === "cancelled").length;
   const inProgress = orders.filter((order) => !["delivered", "cancelled"].includes(order.status)).length;
   const total = orders.length;
+  const buckets = reportBuckets();
   const statuses = reportStatuses.map(([status, label]) => ({
     label,
     count: orders.filter((order) => order.status === status).length,
   }));
   return `${heading("Dashboard", "Acompanhe o movimento do seu restaurante") }
+    ${renderBannerCarousel()}
     <div class="report-toolbar">${reportPeriodFilter()}<span class="report-period-note">${reportPeriods[reportPeriod]}</span></div>
     <section class="report-cards" aria-label="Indicadores de pedidos">
       <article class="report-card"><span class="report-card-icon orange">▦</span><div><p>Pedidos feitos</p><strong>${total}</strong><small>${reportPeriods[reportPeriod]}</small></div></article>
@@ -337,6 +492,7 @@ function renderDashboard() {
       <article class="report-card"><span class="report-card-icon red">×</span><div><p>Cancelados</p><strong>${cancelled}</strong><small>${total ? `${Math.round((cancelled / total) * 100)}% dos pedidos` : "Sem pedidos no período"}</small></div></article>
       <article class="report-card"><span class="report-card-icon amber">↗</span><div><p>Em andamento</p><strong>${inProgress}</strong><small>Inclui pedidos em entrega</small></div></article>
     </section>
+    ${renderTrendChart("Pedidos ao longo do período", reportPeriods[reportPeriod], buckets, buckets.map((bucket) => bucket.orders.length), (value) => String(Math.round(value)))}
     <section class="report-panel">
       <div class="report-panel-heading"><div><h2>Pedidos por etapa</h2><p>Distribuição dos pedidos no período selecionado</p></div><span class="report-total">${total} ${total === 1 ? "pedido" : "pedidos"}</span></div>
       ${total ? `<div class="status-breakdown">${statuses.map(({ label, count }) => `<div class="status-row"><span>${label}</span><div class="status-track"><span class="status-fill" style="width:${Math.round((count / total) * 100)}%"></span></div><b>${count}</b></div>`).join("")}</div>` : `<div class="empty-state">Nenhum pedido encontrado neste período.</div>`}
@@ -352,6 +508,10 @@ function renderFinance() {
   const pending = openOrders.reduce((sum, order) => sum + orderTotal(order), 0);
   const cancelledValue = cancelledOrders.reduce((sum, order) => sum + orderTotal(order), 0);
   const averageTicket = deliveredOrders.length ? revenue / deliveredOrders.length : 0;
+  const buckets = reportBuckets();
+  const revenueByBucket = buckets.map((bucket) => bucket.orders
+    .filter((order) => order.status === "delivered")
+    .reduce((sum, order) => sum + orderTotal(order), 0));
   const soldProducts = new Map();
   deliveredOrders.forEach((order) => order.items.forEach((item) => {
     const product = state.products.find((candidate) => candidate.id === item.productId);
@@ -369,6 +529,7 @@ function renderFinance() {
       <article class="report-card"><span class="report-card-icon red">×</span><div><p>Cancelamentos</p><strong>${currency(cancelledValue)}</strong><small>${cancelledOrders.length} ${cancelledOrders.length === 1 ? "pedido cancelado" : "pedidos cancelados"}</small></div></article>
       <article class="report-card"><span class="report-card-icon orange">↗</span><div><p>Ticket médio</p><strong>${currency(averageTicket)}</strong><small>Por pedido entregue</small></div></article>
     </section>
+    ${renderTrendChart("Faturamento bruto", `Pedidos entregues · ${reportPeriods[reportPeriod]}`, buckets, revenueByBucket, compactCurrency)}
     <section class="report-panel finance-panel">
       <div class="report-panel-heading"><div><h2>Produtos mais vendidos</h2><p>Quantidade em pedidos entregues no período</p></div></div>
       ${topProducts.length ? `<div class="top-products">${topProducts.map((product, index) => `<div class="top-product"><span class="top-product-rank">${index + 1}</span><b>${escapeHtml(product.name)}</b><span>${product.quantity} ${product.quantity === 1 ? "unidade" : "unidades"}</span></div>`).join("")}</div>` : `<div class="empty-state">Ainda não há vendas entregues neste período.</div>`}
@@ -434,7 +595,6 @@ function renderOrders() {
   const historyOrders = historyStatus ? orders.filter((order) => order.status === historyStatus) : [];
   const counts = Object.fromEntries(orderStages.map(([status]) => [status, activeOrders.filter((order) => order.status === status).length]));
   return `${heading("Pedidos (Vendas)", "Gerencie todos os pedidos do seu negócio em tempo real", `<button class="primary-button" type="button" data-action="new-order">＋ Inserir pedido manual</button>`)}
-    ${renderBannerCarousel()}
     <div class="toolbar">
       <div class="search-wrap"><input class="search-input" id="order-search" type="search" placeholder="Buscar pedido, cliente, telefone..." value="${escapeHtml(orderQuery)}"></div>
       <div class="stats-row"><span class="stat-pill">Todos <b>${state.orders.length}</b></span><span class="stat-pill orange">Saíram <b>${state.orders.filter((o) => o.status === "shipped").length}</b></span><span class="stat-pill green">Entregues <b>${state.orders.filter((o) => o.status === "delivered").length}</b></span><span class="stat-pill">Cancelados <b>${state.orders.filter((o) => o.status === "cancelled").length}</b></span></div>

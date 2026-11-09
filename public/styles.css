@@ -699,6 +699,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .report-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 17px; }
 .report-panel-heading h2 { margin: 0 0 4px; color: #40291e; font-size: 15px; }
 .report-panel-heading p { margin: 0; color: var(--muted); font-size: 10px; }
+.report-chart-panel { margin-bottom: 16px; }
+.chart-scroll { overflow-x: auto; }
+.report-chart { display: block; width: 100%; min-width: 580px; height: auto; overflow: visible; }
+.chart-grid line { stroke: #f0e5dc; stroke-dasharray: 3 4; }
+.chart-grid text, .chart-label { fill: #8c756a; font-family: inherit; font-size: 10px; }
+.chart-area { fill: rgb(244 91 36 / 12%); }
+.chart-line { fill: none; stroke: #e85a24; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+.chart-point circle { fill: white; stroke: #e85a24; stroke-width: 2.5; }
 .report-total { color: #a84320; font-size: 10px; font-weight: 800; }
 .status-breakdown { display: grid; gap: 15px; }
 .status-row { display: grid; grid-template-columns: minmax(80px, 120px) minmax(70px, 1fr) 24px; align-items: center; gap: 12px; color: #62473b; font-size: 10px; }
